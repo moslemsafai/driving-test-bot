@@ -1,87 +1,77 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import Updater, CommandHandler, CallbackContext, MessageHandler, Filters, CallbackQueryHandler
 
-# لیست آزمون‌ها
-FREE_TEST = 1
-TOTAL_TESTS = 30
-SPECIAL_SUBSCRIPTION_USERS = []  # لیست کاربران با اشتراک ویژه
+# لیست کاربران دارای اشتراک ویژه
+vip_users = set()
 
 def start(update: Update, context: CallbackContext) -> None:
-    user_id = update.message.chat_id
+    chat_id = update.message.chat_id
     text = """
-    ✅ **بات آزمون رانندگی**
+    \U0001F697 *بات آزمون رانندگی*
     
-    ✨ امکان استفاده از آموزش‌های داخل ربات و آماده شدن برای آزمون
-    ✨ داشتن بیش از ۲۵ نوع آزمون
-    ✨ محاسبه خودکار درصد قبولی شما
-    ✨ تاریخچه آزمون‌ها
-    ✨ بیشمار قابلیت جذاب دیگر ...
+    ✅ امکان استفاده از آموزش‌های داخل ربات و آماده شدن برای آزمون
+    ♻️ داشتن بیش از ۲۵ نوع آزمون
+    ⚖ محاسبه خودکار درصد قبولی شما
+    📅 تاریخچه آزمون‌ها
+    ✨ بیشمار قابلیت جذاب دیگر...
     
-    ✨ **موفق باشید!**
+    موفق باشید!
     """
     keyboard = [
-        [InlineKeyboardButton("📚 آموزش", callback_data='education')],
-        [InlineKeyboardButton("🎯 آزمون", callback_data='tests')],
-        [InlineKeyboardButton("✨ احتمال قبولی", callback_data='success_rate')],
-        [InlineKeyboardButton("⏳ تاریخچه آزمون‌ها", callback_data='history')],
-        [InlineKeyboardButton("❌ پاک کردن همه اطلاعات", callback_data='clear_data')],
-        [InlineKeyboardButton("✉ پشتیبانی", url='https://t.me/Safaimoslem')],
-        [InlineKeyboardButton("💰 اشتراک ویژه", callback_data='special_access')],
+        [InlineKeyboardButton("آموزش", callback_data='education')],
+        [InlineKeyboardButton("آزمون‌ها", callback_data='tests')],
+        [InlineKeyboardButton("احتمال قبولی", callback_data='probability')],
+        [InlineKeyboardButton("تاریخچه آزمون‌ها", callback_data='history')],
+        [InlineKeyboardButton("پاک کردن همه اطلاعات", callback_data='clear_data')],
+        [InlineKeyboardButton("پشتیبانی", callback_data='support')],
+        [InlineKeyboardButton("اشتراک ویژه", callback_data='vip')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text(text, reply_markup=reply_markup, parse_mode='Markdown')
+    
+    context.bot.send_message(chat_id=chat_id, text=text, parse_mode='Markdown', reply_markup=reply_markup)
 
 def show_tests(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
-    query.answer()
-    keyboard = []
-    for i in range(1, TOTAL_TESTS + 1):
-        if i == FREE_TEST or query.message.chat_id in SPECIAL_SUBSCRIPTION_USERS:
-            keyboard.append([InlineKeyboardButton(f"آزمون {i}", callback_data=f'test_{i}')])
-        else:
-            keyboard.append([InlineKeyboardButton(f"آزمون {i} (نیاز به اشتراک ویژه)", callback_data='buy_subscription')])
-    keyboard.append([InlineKeyboardButton("⬅ بازگشت", callback_data='dashboard')])
+    chat_id = query.message.chat_id
+    keyboard = [[InlineKeyboardButton(f"آزمون {i}", callback_data=f'test_{i}') for i in range(1, 6)]]
+    keyboard.append([InlineKeyboardButton("بازگشت", callback_data='dashboard')])
     reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text("لطفا آزمون مورد نظر را انتخاب کنید:", reply_markup=reply_markup)
+    query.edit_message_text("لطفاً یک آزمون را انتخاب کنید:", reply_markup=reply_markup)
 
 def start_test(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
+    chat_id = query.message.chat_id
     test_number = query.data.split('_')[1]
-    text = f"""
-    ✨ **آزمون {test_number}**
     
-    📚 تعداد سوالات: ۳۰
-    ⏳ مدت زمان: ۳۰ دقیقه
-    """
-    keyboard = [[InlineKeyboardButton("▶ شروع آزمون", callback_data=f'start_quiz_{test_number}')],
-                [InlineKeyboardButton("⬅ بازگشت", callback_data='tests')]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text(text, reply_markup=reply_markup, parse_mode='Markdown')
-
-def process_question(update: Update, context: CallbackContext) -> None:
-    query = update.callback_query
-    question_number = 1  # برای پیاده‌سازی واقعی باید از دیتابیس بگیریم
-    text = f"سوال {question_number}:
+    if test_number != "1" and chat_id not in vip_users:
+        query.answer("برای انجام این آزمون نیاز به اشتراک ویژه دارید.")
+        return
     
-    این یک سوال نمونه است؟"
-    keyboard = [
-        [InlineKeyboardButton("گزینه ۱", callback_data='answer_1')],
-        [InlineKeyboardButton("گزینه ۲", callback_data='answer_2')],
-        [InlineKeyboardButton("گزینه ۳", callback_data='answer_3')],
-        [InlineKeyboardButton("گزینه ۴", callback_data='answer_4')],
-    ]
+    text = f"آزمون {test_number}\nتعداد سوالات: 30\nمدت زمان: 30 دقیقه"
+    keyboard = [[InlineKeyboardButton("شروع آزمون", callback_data=f'start_{test_number}')]]
+    keyboard.append([InlineKeyboardButton("بازگشت", callback_data='tests')])
     reply_markup = InlineKeyboardMarkup(keyboard)
     query.edit_message_text(text, reply_markup=reply_markup)
 
+def handle_callback(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    data = query.data
+    if data == "dashboard":
+        start(update, context)
+    elif data == "tests":
+        show_tests(update, context)
+    elif data.startswith("test_"):
+        start_test(update, context)
+    elif data == "support":
+        query.edit_message_text("برای پشتیبانی به آیدی @Safaimoslem پیام دهید.")
+    elif data == "vip":
+        query.edit_message_text("برای خرید اشتراک ویژه به آیدی @Safaimoslem پیام دهید.")
+
 def main():
-    updater = Updater("YOUR_BOT_TOKEN")
+    updater = Updater("YOUR_BOT_TOKEN", use_context=True)
     dp = updater.dispatcher
-    
     dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CallbackQueryHandler(show_tests, pattern='^tests$'))
-    dp.add_handler(CallbackQueryHandler(start_test, pattern='^test_\\d+$'))
-    dp.add_handler(CallbackQueryHandler(process_question, pattern='^start_quiz_\\d+$'))
-    
+    dp.add_handler(CallbackQueryHandler(handle_callback))
     updater.start_polling()
     updater.idle()
 

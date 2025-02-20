@@ -26,7 +26,6 @@ async def show_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     query = update.callback_query
     text = """
     🎛 *داشبورد مدیریت*
-    
     لطفاً یکی از گزینه‌های زیر را انتخاب کنید:
     """
     keyboard = [
@@ -57,13 +56,7 @@ async def start_test(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await query.answer("❌ برای انجام این آزمون نیاز به اشتراک ویژه دارید.", show_alert=True)
         return
     
-    text = f"""
-    📘 *آزمون {test_number}*
-    
-    ✅ تعداد سوالات: 30
-    ⏳ مدت زمان: 30 دقیقه
-    """
-    
+    text = f"📘 *آزمون {test_number}*\n✅ تعداد سوالات: 30\n⏳ مدت زمان: 30 دقیقه"
     keyboard = [[InlineKeyboardButton("🚀 شروع آزمون", callback_data=f'start_exam_{test_number}')]]
     keyboard.append([InlineKeyboardButton("🔙 بازگشت", callback_data='tests')])
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -88,16 +81,18 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await query.edit_message_text("💎 برای خرید اشتراک ویژه به آیدی @Safaimoslem پیام دهید.")
 
 async def main():
-    app = Application.builder().token("YOUR_BOT_TOKEN").build()
+    app = Application.builder().token("6777321754:AAHeJG9qqU3ZBLmqP2JKU67G-rmBm8-ut2I").build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_callback))
     
-    print("✅ ربات در حال اجرا است...")
+    print("ربات در حال اجرا است...")
+    
+    # اجرای Polling بدون `asyncio.run()`
+    await app.initialize()
+    await app.start()
     await app.run_polling()
 
+# اجرای `main()` بدون `asyncio.run()`
 if __name__ == '__main__':
-    try:
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(main())
-    except RuntimeError:
-        asyncio.run(main())
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())

@@ -81,7 +81,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await query.edit_message_text("💎 برای خرید اشتراک ویژه به آیدی @Safaimoslem پیام دهید.")
 
 async def main():
-    app = Application.builder().token("YOUR_BOT_TOKEN").build()
+    app = Application.builder().token("6777321754:AAHeJG9qqU3ZBLmqP2JKU67G-rmBm8-ut2I").build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_callback))
     

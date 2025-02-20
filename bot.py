@@ -1,17 +1,10 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
-import logging
-
-# تنظیمات لاگ‌گیری برای بررسی خطاها
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO
-)
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # لیست کاربران دارای اشتراک ویژه
 vip_users = set()
 
-async def start(update: Update, context) -> None:
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     text = """
     \U0001F697 *بات آزمون رانندگی*
     
@@ -23,65 +16,77 @@ async def start(update: Update, context) -> None:
     
     موفق باشید!
     """
-    keyboard = [
-        [InlineKeyboardButton("آموزش", callback_data='education')],
-        [InlineKeyboardButton("آزمون‌ها", callback_data='tests')],
-        [InlineKeyboardButton("احتمال قبولی", callback_data='probability')],
-        [InlineKeyboardButton("تاریخچه آزمون‌ها", callback_data='history')],
-        [InlineKeyboardButton("پاک کردن همه اطلاعات", callback_data='clear_data')],
-        [InlineKeyboardButton("پشتیبانی", callback_data='support')],
-        [InlineKeyboardButton("اشتراک ویژه", callback_data='vip')]
-    ]
+    keyboard = [[InlineKeyboardButton("🚘 داشبورد", callback_data='dashboard')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(text, parse_mode='Markdown', reply_markup=reply_markup)
 
-async def show_tests(update: Update, context) -> None:
+async def show_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    keyboard = [[InlineKeyboardButton(f"آزمون {i}", callback_data=f'test_{i}') for i in range(1, 6)]]
-    keyboard.append([InlineKeyboardButton("بازگشت", callback_data='dashboard')])
+    text = """
+    🎛 *داشبورد مدیریت*
+    لطفاً یکی از گزینه‌های زیر را انتخاب کنید:
+    """
+    keyboard = [
+        [InlineKeyboardButton("📚 آموزش", callback_data='education')],
+        [InlineKeyboardButton("📝 آزمون‌ها", callback_data='tests')],
+        [InlineKeyboardButton("📊 احتمال قبولی", callback_data='probability')],
+        [InlineKeyboardButton("📂 تاریخچه آزمون‌ها", callback_data='history')],
+        [InlineKeyboardButton("🗑 پاک کردن همه اطلاعات", callback_data='clear_data')],
+        [InlineKeyboardButton("🆘 پشتیبانی", callback_data='support')],
+        [InlineKeyboardButton("💎 اشتراک ویژه", callback_data='vip')]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text("لطفاً یک آزمون را انتخاب کنید:", reply_markup=reply_markup)
+    await query.edit_message_text(text, parse_mode='Markdown', reply_markup=reply_markup)
 
-async def start_test(update: Update, context) -> None:
+async def show_tests(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
+    keyboard = [[InlineKeyboardButton(f"📝 آزمون {i}", callback_data=f'test_{i}')] for i in range(1, 31)]
+    keyboard.append([InlineKeyboardButton("🔙 بازگشت", callback_data='dashboard')])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text("📋 لطفاً یک آزمون را انتخاب کنید:", reply_markup=reply_markup)
+
+async def start_test(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    chat_id = query.message.chat_id
     test_number = query.data.split('_')[1]
     
-    if test_number != "1" and query.message.chat_id not in vip_users:
-        await query.answer("برای انجام این آزمون نیاز به اشتراک ویژه دارید.", show_alert=True)
+    if test_number != "1" and chat_id not in vip_users:
+        await query.answer("❌ برای انجام این آزمون نیاز به اشتراک ویژه دارید.", show_alert=True)
         return
     
-    text = f"آزمون {test_number}\nتعداد سوالات: 30\nمدت زمان: 30 دقیقه"
-    keyboard = [[InlineKeyboardButton("شروع آزمون", callback_data=f'start_{test_number}')]]
-    keyboard.append([InlineKeyboardButton("بازگشت", callback_data='tests')])
+    text = f"📘 *آزمون {test_number}*
+    \n✅ تعداد سوالات: 30
+    ⏳ مدت زمان: 30 دقیقه"
+    keyboard = [[InlineKeyboardButton("🚀 شروع آزمون", callback_data=f'start_exam_{test_number}')]]
+    keyboard.append([InlineKeyboardButton("🔙 بازگشت", callback_data='tests')])
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(text, reply_markup=reply_markup)
+    await query.edit_message_text(text, parse_mode='Markdown', reply_markup=reply_markup)
 
-async def handle_callback(update: Update, context) -> None:
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     data = query.data
-
+    
     if data == "dashboard":
-        await start(query, context)
+        await show_dashboard(update, context)
     elif data == "tests":
         await show_tests(update, context)
     elif data.startswith("test_"):
         await start_test(update, context)
+    elif data.startswith("start_exam_"):
+        test_number = data.split('_')[-1]
+        await query.edit_message_text(f"🎯 *آزمون {test_number} آغاز شد!*")
     elif data == "support":
-        await query.edit_message_text("برای پشتیبانی به آیدی @Safaimoslem پیام دهید.")
+        await query.edit_message_text("📞 برای پشتیبانی به آیدی @Safaimoslem پیام دهید.")
     elif data == "vip":
-        await query.edit_message_text("برای خرید اشتراک ویژه به آیدی @Safaimoslem پیام دهید.")
+        await query.edit_message_text("💎 برای خرید اشتراک ویژه به آیدی @Safaimoslem پیام دهید.")
 
-def main():
-    TOKEN = "6777321754:AAHeJG9qqU3ZBLmqP2JKU67G-rmBm8-ut2I"
-
-    app = Application.builder().token(TOKEN).build()
-    
+async def main():
+    app = Application.builder().token("YOUR_BOT_TOKEN").build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_callback))
-
-    print("ربات در حال اجرا است...")
-    app.run_polling()
+    await app.run_polling()
 
 if __name__ == '__main__':
-    main()
+    import asyncio
+    asyncio.run(main())

@@ -81,18 +81,23 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await query.edit_message_text("💎 برای خرید اشتراک ویژه به آیدی @Safaimoslem پیام دهید.")
 
 async def main():
-    app = Application.builder().token("6777321754:AAHeJG9qqU3ZBLmqP2JKU67G-rmBm8-ut2I").build()
+    app = Application.builder().token("YOUR_BOT_TOKEN").build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_callback))
     
     print("ربات در حال اجرا است...")
-    
-    # اجرای Polling بدون `asyncio.run()`
+
+    # اجرای Polling با مدیریت صحیح حلقه‌ی asyncio
     await app.initialize()
     await app.start()
-    await app.run_polling()
+    try:
+        await app.run_polling()
+    finally:
+        await app.stop()
+        await app.shutdown()
 
-# اجرای `main()` بدون `asyncio.run()`
+# اجرای حلقه‌ی نامحدود بدون بستن event loop
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    loop.create_task(main())  # اجرای main() به‌عنوان یک تسک
+    loop.run_forever()  # اجرای نامحدود برای جلوگیری از بستن event loop

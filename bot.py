@@ -25,6 +25,7 @@ async def show_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     query = update.callback_query
     text = """
     🎛 *داشبورد مدیریت*
+    
     لطفاً یکی از گزینه‌های زیر را انتخاب کنید:
     """
     keyboard = [
@@ -55,9 +56,13 @@ async def start_test(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await query.answer("❌ برای انجام این آزمون نیاز به اشتراک ویژه دارید.", show_alert=True)
         return
     
-    text = f"📘 *آزمون {test_number}*
-    \n✅ تعداد سوالات: 30
-    ⏳ مدت زمان: 30 دقیقه"
+    text = f"""
+    📘 *آزمون {test_number}*
+    
+    ✅ تعداد سوالات: 30
+    ⏳ مدت زمان: 30 دقیقه
+    """
+    
     keyboard = [[InlineKeyboardButton("🚀 شروع آزمون", callback_data=f'start_exam_{test_number}')]]
     keyboard.append([InlineKeyboardButton("🔙 بازگشت", callback_data='tests')])
     reply_markup = InlineKeyboardMarkup(keyboard)
